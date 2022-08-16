@@ -9,20 +9,86 @@ app.use(cors());
 
 const users = [];
 
+function getUserByUsername(username) {
+  return users.find(user => user.username === username);  
+}
+
+function getUserById(id) {
+  return users.find(user => user.id === id);
+}
+
+function getTodoById(todos, id) {
+  return todos.find(todo => todo.id === id)
+}
+
 function checksExistsUserAccount(request, response, next) {
-  // Complete aqui
+  const { username } = request.headers;
+  const user = getUserByUsername(username);
+  if (!user) {
+    return response.status(404).json({ error: 'User does not exists' });
+  }
+  request.user = user;
+  return next();
 }
 
 function checksCreateTodosUserAvailability(request, response, next) {
-  // Complete aqui
+  const { user } = request;
+  
+  const { todos, pro } = user;
+  
+  request.user = user;
+
+  
+  if (pro) return next();  
+
+  if (todos.length < 10) {
+    if (!pro) return next();
+  }
+
+  if (todos.length === 10 && !pro) {
+    return response.status(403).json({ error: 'Todolist full, upgrade to pro' });   
+  }
+
 }
 
 function checksTodoExists(request, response, next) {
-  // Complete aqui
+  const { username } = request.headers;
+  const { id } = request.params;
+
+  const user = getUserByUsername(username);
+
+  if (!user) {
+    return response.status(404).json({ error: 'User does not exists' });
+  }
+
+  const isValidId = validate(id);
+
+  if (!isValidId) {
+    return response.status(400).json({ error: 'Id is not uuid' });
+  }
+
+  const { todos } = user;
+
+  const todo = getTodoById(todos, id);
+
+  if (!todo) {
+    return response.status(404).json({ error: 'Todo dont exists' });
+  }
+
+  request.user = user;
+  request.todo = todo;
+
+  return next();
 }
 
 function findUserById(request, response, next) {
-  // Complete aqui
+  const { id } = request.params;
+  const user = getUserById(id);
+  if (!user) {
+    return response.status(404).json({ error: 'User does not exists' });
+  }
+  request.user = user;
+  return next();
 }
 
 app.post('/users', (request, response) => {
